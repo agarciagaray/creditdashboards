@@ -7,24 +7,25 @@ export interface Client {
   sexo: 'M' | 'F' | string;
   edad: number;
   ciucli: string; // City
-  codemp: string; // Employer code
+  codemp: string; // Employer name (columna AH - nomemp)
 }
 
 export interface Credit {
   numlib: string; // Credit number
   valcuo: number; // Payment amount
-  valtot: number; // Total value
+  valtot: number; // Total value (columna J)
   fecini: string; // Start date
   fecfin: string; // End date
-  saldocapital: number; // Current capital balance
+  saldocapital: number; // Current capital balance (columna L - salcapital)
   ncuotas: number; // Number of installments
   npagos: number; // Number of payments made
-  diasmora: number; // Delinquency days
+  diasmora: number; // Delinquency days (columna X - ndias)
   calidad: string; // Quality rating
-  riesgo: 'A' | 'B' | 'C' | 'D' | 'E' | string; // Risk classification
+  calif: 'A' | 'B' | 'C' | 'D' | 'E' | string; // Clasificación de riesgo (columna Z)
+  vencido: number; // Amount in delinquency (columna Y)
 }
 
-export interface PortfolioItem extends Client, Credit {}
+export interface PortfolioItem extends Client, Credit { }
 
 export interface FilterOptions {
   ageRanges: string[];

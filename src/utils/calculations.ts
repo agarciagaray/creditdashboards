@@ -1,32 +1,32 @@
-import { PortfolioItem, KpiMetrics, ChartData, MultiSeriesChartData } from '../types';
-import { filterByAge, filterByGender, filterByAmount, filterByDelinquency } from './filters';
+import { ChartData, KpiMetrics, MultiSeriesChartData, PortfolioItem } from '../types';
+import { filterByAge, filterByAmount, filterByGender } from './filters';
 
 // Calculate key metrics from filtered portfolio data
 export const calculateKpiMetrics = (data: PortfolioItem[]): KpiMetrics => {
-  // Total portfolio value
+  // Total portfolio value (suma de columna J - valtot)
   const totalPortfolio = data.reduce((sum, item) => sum + item.valtot, 0);
-  
-  // Capital balance
+
+  // Capital balance (suma de columna L - salcapital)
   const capitalBalance = data.reduce((sum, item) => sum + item.saldocapital, 0);
-  
-  // Delinquency
-  const delinquentItems = data.filter(item => item.diasmora > 0);
-  const delinquencyAmount = delinquentItems.reduce((sum, item) => sum + item.saldocapital, 0);
-  const delinquencyRate = totalPortfolio > 0 ? (delinquencyAmount / capitalBalance) * 100 : 0;
-  
+
+  // Delinquency (usando columna Y - vencido)
+  const delinquentItems = data.filter(item => item.vencido > 0);
+  const delinquencyAmount = delinquentItems.reduce((sum, item) => sum + item.vencido, 0);
+  const delinquencyRate = capitalBalance > 0 ? (delinquencyAmount / capitalBalance) * 100 : 0;
+
   // Clients
   const activeCredits = data.length;
   const clientsInDelinquency = delinquentItems.length;
-  
-  // Average delinquency days
-  const totalDelinquencyDays = data.reduce((sum, item) => sum + item.diasmora, 0);
-  const averageDelinquencyDays = activeCredits > 0 ? totalDelinquencyDays / activeCredits : 0;
-  
-  // High risk portfolio (D and E categories)
-  const highRiskItems = data.filter(item => ['D', 'E'].includes(item.riesgo));
+
+  // Average delinquency days (usando columna X - ndias)
+  const totalDelinquencyDays = delinquentItems.reduce((sum, item) => sum + item.diasmora, 0);
+  const averageDelinquencyDays = clientsInDelinquency > 0 ? totalDelinquencyDays / clientsInDelinquency : 0;
+
+  // High risk portfolio (categorias diferentes de A, usando columna Z - calif y sumando salcapital)
+  const highRiskItems = data.filter(item => item.calif !== 'A');
   const highRiskPortfolio = highRiskItems.reduce((sum, item) => sum + item.saldocapital, 0);
   const highRiskRate = capitalBalance > 0 ? (highRiskPortfolio / capitalBalance) * 100 : 0;
-  
+
   return {
     totalPortfolio,
     capitalBalance,
@@ -40,35 +40,42 @@ export const calculateKpiMetrics = (data: PortfolioItem[]): KpiMetrics => {
   };
 };
 
-// Generate distribution data by risk category
+// Generate distribution data by risk category (usando columna Z - calif y sumando salcapital)
 export const getRiskDistribution = (data: PortfolioItem[]): ChartData[] => {
-  const distribution: Record<string, number> = { A: 0, B: 0, C: 0, D: 0, E: 0 };
-  
+  // Las categorías de riesgo ahora se basan en los valores únicos de 'calif' en los datos.
+  // No pre-definimos { A: 0, B: 0, ... } ya que podrían haber otras categorías.
+  const distribution: Record<string, number> = {};
+
   data.forEach(item => {
-    if (distribution[item.riesgo] !== undefined) {
-      distribution[item.riesgo] += item.saldocapital;
+    const riskCategory = item.calif.trim().toUpperCase();
+    if (!distribution[riskCategory]) {
+      distribution[riskCategory] = 0;
     }
+    distribution[riskCategory] += item.saldocapital;
   });
-  
-  return Object.entries(distribution).map(([name, value]) => ({
-    name,
-    value: Math.round(value),
-  }));
+
+  // Ordenar por nombre de categoría (A, B, C, D, E) si existen, o alfabéticamente si hay otras.
+  return Object.entries(distribution)
+    .map(([name, value]) => ({
+      name,
+      value: Math.round(value),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 };
 
 // Generate distribution data by delinquency category
 export const getDelinquencyDistribution = (data: PortfolioItem[]): ChartData[] => {
   const categories = [
-    { name: 'Sin mora', filter: (item: PortfolioItem) => filterByDelinquency(item, 'Sin mora') },
-    { name: '1-30 días', filter: (item: PortfolioItem) => filterByDelinquency(item, '1-30 días') },
-    { name: '31-60 días', filter: (item: PortfolioItem) => filterByDelinquency(item, '31-60 días') },
-    { name: '61-90 días', filter: (item: PortfolioItem) => filterByDelinquency(item, '61-90 días') },
-    { name: 'Mayor a 90 días', filter: (item: PortfolioItem) => filterByDelinquency(item, 'Mayor a 90 días') },
+    { name: 'Sin mora', filter: (item: PortfolioItem) => item.vencido === 0 },
+    { name: '1-30 días', filter: (item: PortfolioItem) => item.diasmora >= 1 && item.diasmora <= 30 },
+    { name: '31-60 días', filter: (item: PortfolioItem) => item.diasmora >= 31 && item.diasmora <= 60 },
+    { name: '61-90 días', filter: (item: PortfolioItem) => item.diasmora >= 61 && item.diasmora <= 90 },
+    { name: 'Mayor a 90 días', filter: (item: PortfolioItem) => item.diasmora > 90 },
   ];
-  
+
   return categories.map(category => {
     const filteredData = data.filter(category.filter);
-    const value = filteredData.reduce((sum, item) => sum + item.saldocapital, 0);
+    const value = filteredData.reduce((sum, item) => sum + item.vencido, 0);
     return {
       name: category.name,
       value: Math.round(value),
@@ -85,7 +92,7 @@ export const getAgeDistribution = (data: PortfolioItem[]): ChartData[] => {
     { name: '51-60', filter: (item: PortfolioItem) => filterByAge(item, '51-60') },
     { name: 'Mayor de 60', filter: (item: PortfolioItem) => filterByAge(item, 'Mayor de 60') },
   ];
-  
+
   return categories.map(category => {
     const filteredData = data.filter(category.filter);
     const value = filteredData.reduce((sum, item) => sum + item.saldocapital, 0);
@@ -102,7 +109,7 @@ export const getGenderDistribution = (data: PortfolioItem[]): ChartData[] => {
     { name: 'Masculino', filter: (item: PortfolioItem) => filterByGender(item, 'M') },
     { name: 'Femenino', filter: (item: PortfolioItem) => filterByGender(item, 'F') },
   ];
-  
+
   return categories.map(category => {
     const filteredData = data.filter(category.filter);
     const value = filteredData.reduce((sum, item) => sum + item.saldocapital, 0);
@@ -122,7 +129,7 @@ export const getAmountDistribution = (data: PortfolioItem[]): ChartData[] => {
     { name: '20M-50M', filter: (item: PortfolioItem) => filterByAmount(item, '20M-50M') },
     { name: 'Mayor de 50M', filter: (item: PortfolioItem) => filterByAmount(item, 'Mayor de 50M') },
   ];
-  
+
   return categories.map(category => {
     const filteredData = data.filter(category.filter);
     const value = filteredData.reduce((sum, item) => sum + item.saldocapital, 0);
@@ -136,14 +143,14 @@ export const getAmountDistribution = (data: PortfolioItem[]): ChartData[] => {
 // Generate distribution data by city
 export const getCityDistribution = (data: PortfolioItem[]): ChartData[] => {
   const distribution: Record<string, number> = {};
-  
+
   data.forEach(item => {
     if (!distribution[item.ciucli]) {
       distribution[item.ciucli] = 0;
     }
     distribution[item.ciucli] += item.saldocapital;
   });
-  
+
   return Object.entries(distribution)
     .map(([name, value]) => ({
       name,
@@ -153,23 +160,28 @@ export const getCityDistribution = (data: PortfolioItem[]): ChartData[] => {
     .slice(0, 10); // Top 10 cities
 };
 
-// Generate distribution data by employer
-export const getEmployerDistribution = (data: PortfolioItem[]): ChartData[] => {
-  const distribution: Record<string, number> = {};
-  
+// Generate distribution data by employer (usando columna AH - nomemp como codemp)
+export const getEmployerDistribution = (data: PortfolioItem[]): MultiSeriesChartData[] => {
+  const distribution: Record<string, { value: number, count: number }> = {};
+
   data.forEach(item => {
-    if (!distribution[item.codemp]) {
-      distribution[item.codemp] = 0;
+    const employerCode = item.codemp.trim(); // Usar el código de empleador (que viene de nomemp)
+    if (!distribution[employerCode]) {
+      distribution[employerCode] = { value: 0, count: 0 };
     }
-    distribution[item.codemp] += item.saldocapital;
+    distribution[employerCode].value += item.saldocapital;
+    distribution[employerCode].count += 1;
   });
-  
+
+  // Convertir a formato de gráfico, incluyendo nombre, código, valor y conteo
   return Object.entries(distribution)
-    .map(([name, value]) => ({
-      name,
-      value: Math.round(value),
+    .map(([code, data]) => ({
+      name: code, // Usar el código como nombre principal para el eje
+      'Código': code,
+      'Saldo Capital': Math.round(data.value),
+      'Número de Créditos': data.count,
     }))
-    .sort((a, b) => b.value - a.value)
+    .sort((a, b) => b['Saldo Capital'] - a['Saldo Capital'])
     .slice(0, 10); // Top 10 employers
 };
 
@@ -182,12 +194,12 @@ export const getDelinquencyByAge = (data: PortfolioItem[]): MultiSeriesChartData
     { name: '51-60', filter: (item: PortfolioItem) => filterByAge(item, '51-60') },
     { name: 'Mayor de 60', filter: (item: PortfolioItem) => filterByAge(item, 'Mayor de 60') },
   ];
-  
+
   return categories.map(category => {
     const filteredData = data.filter(category.filter);
     const totalDelinquencyDays = filteredData.reduce((sum, item) => sum + item.diasmora, 0);
     const averageDelinquencyDays = filteredData.length > 0 ? totalDelinquencyDays / filteredData.length : 0;
-    
+
     return {
       name: category.name,
       'Días promedio': Math.round(averageDelinquencyDays),
@@ -201,12 +213,12 @@ export const getDelinquencyByGender = (data: PortfolioItem[]): MultiSeriesChartD
     { name: 'Masculino', filter: (item: PortfolioItem) => filterByGender(item, 'M') },
     { name: 'Femenino', filter: (item: PortfolioItem) => filterByGender(item, 'F') },
   ];
-  
+
   return categories.map(category => {
     const filteredData = data.filter(category.filter);
     const totalDelinquencyDays = filteredData.reduce((sum, item) => sum + item.diasmora, 0);
     const averageDelinquencyDays = filteredData.length > 0 ? totalDelinquencyDays / filteredData.length : 0;
-    
+
     return {
       name: category.name,
       'Días promedio': Math.round(averageDelinquencyDays),
@@ -223,12 +235,12 @@ export const getDelinquencyByAmount = (data: PortfolioItem[]): MultiSeriesChartD
     { name: '20M-50M', filter: (item: PortfolioItem) => filterByAmount(item, '20M-50M') },
     { name: 'Mayor de 50M', filter: (item: PortfolioItem) => filterByAmount(item, 'Mayor de 50M') },
   ];
-  
+
   return categories.map(category => {
     const filteredData = data.filter(category.filter);
     const totalDelinquencyDays = filteredData.reduce((sum, item) => sum + item.diasmora, 0);
     const averageDelinquencyDays = filteredData.length > 0 ? totalDelinquencyDays / filteredData.length : 0;
-    
+
     return {
       name: category.name,
       'Días promedio': Math.round(averageDelinquencyDays),

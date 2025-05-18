@@ -1,90 +1,114 @@
-import React from 'react';
-import { FileUp as FileUpload, Upload } from 'lucide-react';
+import React, { useState } from 'react';
+import { Upload, FileSpreadsheet } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 interface UploadPageProps {
   onFileUpload: (file: File) => void;
 }
 
 const UploadPage: React.FC<UploadPageProps> = ({ onFileUpload }) => {
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      onFileUpload(file);
+  const [dragActive, setDragActive] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const validateExcelFile = (file: File): boolean => {
+    const validTypes = [
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'text/csv'
+    ];
+    return validTypes.includes(file.type);
+  };
+
+  const handleFile = (file: File) => {
+    setError(null);
+    if (!validateExcelFile(file)) {
+      setError('Por favor, sube un archivo Excel válido (.xlsx, .xls o .csv)');
+      return;
+    }
+    onFileUpload(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    if (e.target.files && e.target.files[0]) {
+      handleFile(e.target.files[0]);
     }
   };
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-8 max-w-4xl mx-auto text-center">
-      <h1 className="text-4xl font-bold text-gray-900 mb-6">
-        Análisis de Cartera de Créditos
-      </h1>
-      
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full mb-8">
-        <div className="flex items-center justify-center mb-6">
-          <FileUpload className="h-16 w-16 text-primary-600" />
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="max-w-2xl w-full">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Dashboard de Cartera de Créditos
+          </h1>
+          <p className="text-gray-600">
+            Sube tu archivo Excel para comenzar el análisis
+          </p>
         </div>
-        
-        <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-          Sube tu archivo de cartera
-        </h2>
-        
-        <p className="text-gray-600 mb-6">
-          Analiza tu cartera de créditos de forma rápida y eficiente. Obtén insights valiosos sobre mora, 
-          riesgo crediticio, distribución demográfica y más.
-        </p>
-        
-        <label className="relative flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-primary-500 transition-colors">
-          <div className="flex flex-col items-center justify-center pt-5 pb-6">
-            <Upload className="h-10 w-10 text-gray-400 mb-3" />
-            <p className="mb-2 text-sm text-gray-500">
-              <span className="font-semibold">Haz clic para subir</span> o arrastra y suelta
-            </p>
-            <p className="text-xs text-gray-500">Excel o CSV (Máx. 10MB)</p>
-          </div>
+
+        <div
+          className={`relative border-2 border-dashed rounded-lg p-8 text-center ${
+            dragActive ? 'border-primary-500 bg-primary-50' : 'border-gray-300'
+          }`}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+        >
           <input
             type="file"
-            className="hidden"
             accept=".xlsx,.xls,.csv"
-            onChange={handleFileChange}
+            onChange={handleChange}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           />
-        </label>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
-        <FeatureCard
-          title="Análisis Completo"
-          description="Obtén una visión detallada de tu cartera con métricas clave, gráficos y tendencias."
-          icon={<BarChart2 className="h-8 w-8 text-primary-600" />}
-        />
-        <FeatureCard
-          title="Segmentación Detallada"
-          description="Analiza por edad, género, ubicación y más para tomar decisiones informadas."
-          icon={<Users className="h-8 w-8 text-primary-600" />}
-        />
-        <FeatureCard
-          title="Gestión de Riesgo"
-          description="Identifica y monitorea los niveles de riesgo y mora en tu cartera."
-          icon={<AlertTriangle className="h-8 w-8 text-primary-600" />}
-        />
+          
+          <div className="space-y-4">
+            <div className="flex justify-center">
+              <FileSpreadsheet className="h-16 w-16 text-primary-500" />
+            </div>
+            <div>
+              <p className="text-lg font-medium text-gray-900">
+                Arrastra y suelta tu archivo aquí
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                o haz clic para seleccionar un archivo
+              </p>
+            </div>
+            <p className="text-xs text-gray-500">
+              Formatos soportados: .xlsx, .xls, .csv
+            </p>
+          </div>
+        </div>
+
+        {error && (
+          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+        )}
       </div>
     </div>
   );
 };
-
-interface FeatureCardProps {
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-}
-
-const FeatureCard: React.FC<FeatureCardProps> = ({ title, description, icon }) => (
-  <div className="bg-white rounded-lg shadow-md p-6">
-    <div className="flex items-center justify-center mb-4">
-      {icon}
-    </div>
-    <h3 className="text-lg font-semibold text-gray-800 mb-2">{title}</h3>
-    <p className="text-sm text-gray-600">{description}</p>
-  </div>
-);
 
 export default UploadPage;
