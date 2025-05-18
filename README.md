@@ -49,7 +49,7 @@
    yarn start
    ```
 
-La aplicación estará disponible en [http://localhost:3000](http://localhost:3000)
+La aplicación estará disponible en [http://localhost:5173](http://localhost:5173)
 
 ---
 
@@ -104,7 +104,7 @@ CreditDashboards/
 
 ## 📧 Contacto
 
-¿Tienes dudas o sugerencias? Escríbeme a [tuemail@dominio.com](mailto:tuemail@dominio.com)
+¿Tienes dudas o sugerencias? Escríbeme a [agarciagaray@pm.me](mailto:agarciagaray@pm.me)
 
 ---
 
