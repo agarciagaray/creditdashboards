@@ -14,7 +14,7 @@ interface BreadcrumbProps {
 const Breadcrumb: React.FC<BreadcrumbProps> = ({ items }) => {
   return (
     <nav
-      className="flex"
+      className="flex bg-gray-50 rounded-md px-4 py-2 shadow-sm border border-gray-200"
       aria-label="Breadcrumb"
     >
       <ol className="flex items-center space-x-2">

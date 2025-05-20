@@ -63,6 +63,42 @@ function App() {
   // Estado para la pestaña activa
   const [activeTab, setActiveTab] = useState(0);
 
+  // Hashes para las pestañas
+  const tabHashes = [
+    "#resumen",
+    "#mora",
+    "#demografia",
+    "#geografia",
+    "#datos",
+  ];
+
+  // Sincronizar hash con pestaña activa
+  useEffect(() => {
+    // Al cargar, leer el hash
+    const hash = window.location.hash;
+    const idx = tabHashes.indexOf(hash);
+    if (idx !== -1 && idx !== activeTab) {
+      setActiveTab(idx);
+    }
+    // Escuchar cambios en el hash
+    const onHashChange = () => {
+      const newHash = window.location.hash;
+      const newIdx = tabHashes.indexOf(newHash);
+      if (newIdx !== -1 && newIdx !== activeTab) {
+        setActiveTab(newIdx);
+      }
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+    // eslint-disable-next-line
+  }, []);
+
+  // Al cambiar de pestaña, actualizar el hash
+  const handleTabChange = (index: number) => {
+    window.location.hash = tabHashes[index];
+    setActiveTab(index);
+  };
+
   // Generate filter options when data changes
   useEffect(() => {
     if (filteredData.length > 0) {
@@ -322,8 +358,8 @@ function App() {
   const breadcrumbItems = [
     {
       label: "Dashboard",
-      href: "#",
-      onClick: () => setActiveTab(0),
+      href: "#resumen",
+      onClick: () => handleTabChange(0),
     },
     {
       label: tabs[activeTab]?.label || "Resumen General",
@@ -411,7 +447,7 @@ function App() {
           <TabView
             tabs={tabs}
             activeTab={activeTab}
-            onTabChange={setActiveTab}
+            onTabChange={handleTabChange}
           />
         </div>
       </main>
