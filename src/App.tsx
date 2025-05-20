@@ -2,12 +2,13 @@ import {
   AlertTriangle,
   BarChart2,
   Database,
+  Download,
   Home,
   Map,
   Upload,
   Users,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import DashboardSummary from "./components/DashboardSummary";
 import DelinquencyAnalysis from "./components/DelinquencyAnalysis";
@@ -15,7 +16,9 @@ import DemographicAnalysis from "./components/DemographicAnalysis";
 import FilterPanel from "./components/FilterPanel";
 import GeographicAnalysis from "./components/GeographicAnalysis";
 import ProcessingPage from "./components/ProcessingPage";
+import Breadcrumb from "./components/ui/Breadcrumb";
 import DataTable from "./components/ui/DataTable";
+import ScrollToTop from "./components/ui/ScrollToTop";
 import TabView from "./components/ui/TabView";
 import UploadPage from "./components/UploadPage";
 import { FilterOptions, PortfolioItem, SelectedFilters } from "./types";
@@ -52,6 +55,7 @@ function App() {
 
   // State for filtered data
   const [filteredData, setFilteredData] = useState<PortfolioItem[]>([]);
+  const [displayData, setDisplayData] = useState<PortfolioItem[]>([]);
 
   // State for metrics
   const [metrics, setMetrics] = useState(calculateKpiMetrics([]));
@@ -68,6 +72,7 @@ function App() {
   useEffect(() => {
     if (filteredData.length > 0) {
       const filtered = applyFilters(filteredData, selectedFilters);
+      setDisplayData(filtered);
       setMetrics(calculateKpiMetrics(filtered));
     }
   }, [selectedFilters, filteredData]);
@@ -86,6 +91,7 @@ function App() {
       }
 
       setFilteredData(data);
+      setDisplayData(data);
 
       // Simulate processing time
       await new Promise((resolve) => setTimeout(resolve, 4500));
@@ -240,6 +246,36 @@ function App() {
     });
   };
 
+  // Función para exportar datos
+  const handleExportData = useCallback(() => {
+    const dataToExport = displayData.map((item) => ({
+      Cédula: item.cedmil,
+      Nombre: item.nomcli,
+      "Fecha Nacimiento": item.fechanacimiento,
+      Género: item.sexo,
+      Edad: item.edad,
+      Ciudad: item.ciucli,
+      Empresa: item.codemp,
+      "Número Crédito": item.numlib,
+      "Valor Cuota": item.valcuo,
+      "Valor Total": item.valtot,
+      "Fecha Inicio": item.fecini,
+      "Fecha Fin": item.fecfin,
+      "Saldo Capital": item.saldocapital,
+      "Número Cuotas": item.ncuotas,
+      "Pagos Realizados": item.npagos,
+      "Días Mora": item.diasmora,
+      Calidad: item.calidad,
+      Calificación: item.calif,
+      Vencido: item.vencido,
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Datos");
+    XLSX.writeFile(wb, "cartera_creditos.xlsx");
+  }, [displayData]);
+
   // Create tabs for the dashboard
   const tabs = [
     {
@@ -247,7 +283,7 @@ function App() {
       icon: <Home size={18} />,
       content: (
         <DashboardSummary
-          data={filteredData}
+          data={displayData}
           metrics={metrics}
         />
       ),
@@ -255,24 +291,24 @@ function App() {
     {
       label: "Análisis de Mora",
       icon: <AlertTriangle size={18} />,
-      content: <DelinquencyAnalysis data={filteredData} />,
+      content: <DelinquencyAnalysis data={displayData} />,
     },
     {
       label: "Análisis Demográfico",
       icon: <Users size={18} />,
-      content: <DemographicAnalysis data={filteredData} />,
+      content: <DemographicAnalysis data={displayData} />,
     },
     {
       label: "Análisis Geográfico",
       icon: <Map size={18} />,
-      content: <GeographicAnalysis data={filteredData} />,
+      content: <GeographicAnalysis data={displayData} />,
     },
     {
       label: "Datos Detallados",
       icon: <Database size={18} />,
       content: (
         <DataTable
-          data={filteredData}
+          data={displayData}
           title="Créditos Filtrados"
         />
       ),
@@ -310,8 +346,19 @@ function App() {
                 role="status"
                 aria-live="polite"
               >
-                {filteredData.length} créditos cargados
+                {displayData.length} créditos cargados
               </div>
+              <button
+                onClick={handleExportData}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200"
+                aria-label="Exportar datos"
+              >
+                <Download
+                  className="h-4 w-4 mr-2"
+                  aria-hidden="true"
+                />
+                Exportar
+              </button>
               <button
                 onClick={() => setAppState("upload")}
                 className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200"
@@ -332,6 +379,15 @@ function App() {
         className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6"
         role="main"
       >
+        <div className="mb-6">
+          <Breadcrumb
+            items={[
+              { label: "Dashboard", href: "#" },
+              { label: "Resumen General" },
+            ]}
+          />
+        </div>
+
         <div className="mb-6">
           <FilterPanel
             filterOptions={filterOptions}
@@ -357,6 +413,8 @@ function App() {
           </p>
         </div>
       </footer>
+
+      <ScrollToTop />
     </div>
   );
 }
