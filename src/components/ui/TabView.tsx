@@ -1,39 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
+
+interface Tab {
+  label: string;
+  icon?: React.ReactNode;
+  content: React.ReactNode;
+}
 
 interface TabViewProps {
-  tabs: {
-    label: string;
-    content: React.ReactNode;
-    icon?: React.ReactNode;
-  }[];
+  tabs: Tab[];
 }
 
 const TabView: React.FC<TabViewProps> = ({ tabs }) => {
   const [activeTab, setActiveTab] = useState(0);
 
   return (
-    <div className="animate-fade-in">
-      <div className="border-b border-gray-200 mb-6">
-        <nav className="flex -mb-px overflow-x-auto hide-scrollbar">
+    <div className="w-full">
+      <div
+        className="border-b border-gray-200"
+        role="tablist"
+      >
+        <nav
+          className="flex space-x-8"
+          aria-label="Navegación de pestañas"
+        >
           {tabs.map((tab, index) => (
             <button
               key={index}
-              className={`py-4 px-6 text-sm font-medium transition-all duration-200 border-b-2 whitespace-nowrap flex items-center ${
-                activeTab === index
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
               onClick={() => setActiveTab(index)}
+              className={`
+                py-4 px-1 border-b-2 font-medium text-sm
+                focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500
+                transition-colors duration-200
+                ${
+                  activeTab === index
+                    ? "border-primary-500 text-primary-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }
+              `}
+              role="tab"
+              aria-selected={activeTab === index}
+              aria-controls={`panel-${index}`}
+              id={`tab-${index}`}
             >
-              {tab.icon && <span className="mr-2">{tab.icon}</span>}
-              {tab.label}
+              <div className="flex items-center space-x-2">
+                {tab.icon && (
+                  <span
+                    className="h-5 w-5"
+                    aria-hidden="true"
+                  >
+                    {tab.icon}
+                  </span>
+                )}
+                <span>{tab.label}</span>
+              </div>
             </button>
           ))}
         </nav>
       </div>
-      
-      <div className="animate-fade-in">
-        {tabs[activeTab].content}
+
+      <div className="mt-6">
+        {tabs.map((tab, index) => (
+          <div
+            key={index}
+            role="tabpanel"
+            id={`panel-${index}`}
+            aria-labelledby={`tab-${index}`}
+            className={activeTab === index ? "block" : "hidden"}
+          >
+            {tab.content}
+          </div>
+        ))}
       </div>
     </div>
   );

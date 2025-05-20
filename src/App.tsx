@@ -4,6 +4,7 @@ import {
   Database,
   Home,
   Map,
+  Upload,
   Users,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -288,23 +289,38 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
-      <header className="bg-white shadow-md">
+      <header
+        className="bg-white shadow-md"
+        role="banner"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <BarChart2 className="h-8 w-8 text-primary-600 mr-3" />
+              <BarChart2
+                className="h-8 w-8 text-primary-600 mr-3"
+                aria-hidden="true"
+              />
               <h1 className="text-2xl font-bold text-gray-900">
                 Dashboard de Cartera de Créditos
               </h1>
             </div>
-            <div className="flex items-center">
-              <div className="text-sm text-gray-500 mr-4">
+            <div className="flex items-center space-x-4">
+              <div
+                className="text-sm text-gray-500"
+                role="status"
+                aria-live="polite"
+              >
                 {filteredData.length} créditos cargados
               </div>
               <button
                 onClick={() => setAppState("upload")}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200"
+                aria-label="Cargar nuevo archivo"
               >
+                <Upload
+                  className="h-4 w-4 mr-2"
+                  aria-hidden="true"
+                />
                 Cargar otro archivo
               </button>
             </div>
@@ -312,18 +328,28 @@ function App() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <FilterPanel
-          filterOptions={filterOptions}
-          selectedFilters={selectedFilters}
-          onFilterChange={handleFilterChange}
-          onClearFilters={handleClearFilters}
-        />
+      <main
+        className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6"
+        role="main"
+      >
+        <div className="mb-6">
+          <FilterPanel
+            filterOptions={filterOptions}
+            selectedFilters={selectedFilters}
+            onFilterChange={handleFilterChange}
+            onClearFilters={handleClearFilters}
+          />
+        </div>
 
-        <TabView tabs={tabs} />
+        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+          <TabView tabs={tabs} />
+        </div>
       </main>
 
-      <footer className="bg-white shadow-inner mt-8 py-4">
+      <footer
+        className="bg-white shadow-inner mt-8 py-4"
+        role="contentinfo"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-center text-sm text-gray-500">
             © {new Date().getFullYear()} Dashboard de Cartera de Créditos |
