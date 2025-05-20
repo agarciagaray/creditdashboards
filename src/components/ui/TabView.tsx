@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 
 interface Tab {
   label: string;
@@ -8,11 +8,11 @@ interface Tab {
 
 interface TabViewProps {
   tabs: Tab[];
+  activeTab: number;
+  onTabChange: (index: number) => void;
 }
 
-const TabView: React.FC<TabViewProps> = ({ tabs }) => {
-  const [activeTab, setActiveTab] = useState(0);
-
+const TabView: React.FC<TabViewProps> = ({ tabs, activeTab, onTabChange }) => {
   return (
     <div className="w-full">
       <div
@@ -26,7 +26,7 @@ const TabView: React.FC<TabViewProps> = ({ tabs }) => {
           {tabs.map((tab, index) => (
             <button
               key={index}
-              onClick={() => setActiveTab(index)}
+              onClick={() => onTabChange(index)}
               className={`
                 py-4 px-1 border-b-2 font-medium text-sm
                 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500

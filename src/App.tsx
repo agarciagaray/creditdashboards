@@ -60,6 +60,9 @@ function App() {
   // State for metrics
   const [metrics, setMetrics] = useState(calculateKpiMetrics([]));
 
+  // Estado para la pestaña activa
+  const [activeTab, setActiveTab] = useState(0);
+
   // Generate filter options when data changes
   useEffect(() => {
     if (filteredData.length > 0) {
@@ -315,6 +318,18 @@ function App() {
     },
   ];
 
+  // Breadcrumb dinámico
+  const breadcrumbItems = [
+    {
+      label: "Dashboard",
+      href: "#",
+      onClick: () => setActiveTab(0),
+    },
+    {
+      label: tabs[activeTab]?.label || "Resumen General",
+    },
+  ];
+
   if (appState === "upload") {
     return <UploadPage onFileUpload={handleFileUpload} />;
   }
@@ -380,12 +395,7 @@ function App() {
         role="main"
       >
         <div className="mb-6">
-          <Breadcrumb
-            items={[
-              { label: "Dashboard", href: "#" },
-              { label: "Resumen General" },
-            ]}
-          />
+          <Breadcrumb items={breadcrumbItems} />
         </div>
 
         <div className="mb-6">
@@ -398,7 +408,11 @@ function App() {
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-          <TabView tabs={tabs} />
+          <TabView
+            tabs={tabs}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
         </div>
       </main>
 

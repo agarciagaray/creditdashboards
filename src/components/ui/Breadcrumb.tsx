@@ -4,6 +4,7 @@ import React from "react";
 interface BreadcrumbItem {
   label: string;
   href?: string;
+  onClick?: () => void;
 }
 
 interface BreadcrumbProps {
@@ -18,17 +19,30 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ items }) => {
     >
       <ol className="flex items-center space-x-2">
         <li>
-          <a
-            href="/"
-            className="text-gray-500 hover:text-gray-700 flex items-center"
-          >
-            <Home
-              className="h-4 w-4"
-              aria-hidden="true"
-            />
-          </a>
+          {items[0]?.onClick ? (
+            <button
+              type="button"
+              onClick={items[0].onClick}
+              className="text-gray-500 hover:text-gray-700 flex items-center focus:outline-none"
+            >
+              <Home
+                className="h-4 w-4"
+                aria-hidden="true"
+              />
+            </button>
+          ) : (
+            <a
+              href={items[0]?.href || "/"}
+              className="text-gray-500 hover:text-gray-700 flex items-center"
+            >
+              <Home
+                className="h-4 w-4"
+                aria-hidden="true"
+              />
+            </a>
+          )}
         </li>
-        {items.map((item, index) => (
+        {items.slice(1).map((item, index) => (
           <li
             key={index}
             className="flex items-center"
@@ -37,7 +51,15 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ items }) => {
               className="h-4 w-4 text-gray-400"
               aria-hidden="true"
             />
-            {item.href ? (
+            {item.onClick ? (
+              <button
+                type="button"
+                onClick={item.onClick}
+                className="ml-2 text-sm font-medium text-gray-500 hover:text-gray-700 focus:outline-none"
+              >
+                {item.label}
+              </button>
+            ) : item.href ? (
               <a
                 href={item.href}
                 className="ml-2 text-sm font-medium text-gray-500 hover:text-gray-700"
